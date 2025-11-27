@@ -7,6 +7,7 @@ import { HashInputField } from './comps/hashInputField/hashInputField'
 function App() {
   const [file, setFile] = useState<File | null>(null);
   console.log(file);
+  
   const handleClick = async () => {
     try {
       const response = await fetch('http://localhost:8000/api/data'); //need backend server running
