@@ -8,15 +8,20 @@ function App() {
   const [file, setFile] = useState<File | null>(null);
   console.log(file);
   
-  const handleClick = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/api/data'); //need backend server running
-      const data = await response.json();
-      console.log(data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  }
+  const handleUpload = async () => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("csv", file);
+
+    const response = await fetch("http://localhost:8000/api/upload-csv", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+    console.log("Response:", data);
+};
 
   return (
     <>
@@ -26,7 +31,7 @@ function App() {
 
       <div className="main-container">
         <HashInputField onFileChange={setFile}/>
-        <HashSubmitButton onClick={handleClick}/>
+        <HashSubmitButton onClick={handleUpload}/>
       </div>
     </>
   )

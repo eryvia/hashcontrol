@@ -14,6 +14,18 @@ app.get("/api/data", (_req, res) => {
   });
 });
 
+app.get("/api/csv", (_req, res) => {
+  const csv = `name,age,city
+              John,25,Prague
+              Anna,30,Brno
+              Vojtech,17,Most`;
+
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", "attachment; filename=data.csv");
+
+  res.send(csv);
+});
+
 app.listen(PORT, () => {
   console.log(`Backend running on http://localhost:${PORT}`);
 });
