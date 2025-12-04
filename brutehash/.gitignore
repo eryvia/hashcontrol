@@ -1,0 +1,33 @@
+# Cargo build artifacts
+/target/
+/**/target/
+
+# Binaries
+*.exe
+*.dll
+*.dylib
+*.so
+
+# Compilation output
+*.rlib
+*.rmeta
+
+# Backup or lock files
+**/*.lock
+!Cargo.lock     
+
+# Rustc info
+/.rustc_info.json
+
+# VSCode junk
+.vscode/
+/**/.vscode/
+
+# JetBrains IDE junk
+.idea/
+*.iml
+
+# Misc
+*.log
+*.tmp
+*.old
