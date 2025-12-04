@@ -26,6 +26,15 @@ fn get_values() -> Values {
     }
 }
 
+fn get_hash(value: &str, pepper: &str) -> String {
+    let source: String = pepper.to_string() + value;
+
+    let mut hasher = Sha256::new();
+    hasher.update(source.as_bytes());
+    let result = hasher.finalize();
+    format!("{:x}", result)
+}
+
 fn main() {
     let info: Values = get_values();
     let mut curr_index: i32 = 0;
@@ -35,10 +44,7 @@ fn main() {
     while control == true {
         for index in 0..info.index {
             for x in &info.starter_hash {
-                let mut hasher = Sha256::new();
-                hasher.update(curr_value.as_bytes());
-                let result = hasher.finalize();
-                println!("{}", x);
+                curr_value.push(*x);
                 control = false;
             }
         }
