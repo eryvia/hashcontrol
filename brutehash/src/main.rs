@@ -37,7 +37,6 @@ fn get_hash(value: &str, pepper: &str) -> String {
 
 fn main() {
     let info: Values = get_values();
-    let mut curr_index: i32 = 0;
     let mut curr_value: String = "".to_string();
     let mut control: bool = true;
 
@@ -45,8 +44,28 @@ fn main() {
         for index in 0..info.index {
             for x in &info.starter_hash {
                 curr_value.push(*x);
+                for letter in 0..index {
+                    curr_value.push(letter as u8 as char);
+                }
                 control = false;
             }
         }
     }
 }
+
+/*
+aaa
+aab
+...
+aa0
+
+aba
+abb
+...
+ab0
+
+aca
+acb
+...
+ac0
+ */
