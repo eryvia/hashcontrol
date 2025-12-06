@@ -1,17 +1,18 @@
 use sha2::{Digest, Sha256};
 
-const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789";
+//const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789";
+const ALPHABET: &[u8] = b"abc012";
 
 struct Values {
     pepper: String,
-    index: i32,
+    max_len: i32,
     starter_hash: Vec<char>,
     hashes: Vec<String>,
 }
 
 fn get_values() -> Values {
     let pepper: String = "cajovna-2025-".to_string();
-    let index: i32 = 5;
+    let max_len: i32 = 3;
     let starter_hash: Vec<char> = vec!['a', 'b', 'c', 'd', 'e'];
     let hashes: Vec<String> = vec![
         "936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af".to_string(),
@@ -20,7 +21,7 @@ fn get_values() -> Values {
 
     Values {
         pepper,
-        index,
+        max_len,
         starter_hash,
         hashes,
     }
@@ -41,31 +42,34 @@ fn main() {
     let mut control: bool = true;
 
     while control == true {
-        for index in 0..info.index {
-            for x in &info.starter_hash {
-                curr_value.push(*x);
-                for letter in 0..index {
-                    curr_value.push(letter as u8 as char);
-                }
-                control = false;
+        for x in 0..info.max_len {
+            if (x as usize) == 0 {
+                continue;
             }
+
+            print!("Generating for length: {} \n", x);
+
+            generate_all(x as usize);
         }
+        control = false;
     }
 }
 
-/*
-aaa
-aab
-...
-aa0
+fn generate_all(max_len: usize) {
+    let mut buf = vec![ALPHABET[0]; max_len];
+    generate_recursive(&mut buf, 0, max_len);
+}
 
-aba
-abb
-...
-ab0
+fn generate_recursive(buf: &mut Vec<u8>, pos: usize, max_len: usize) {
+    if pos == max_len {
+        // Convert &[u8] → String
+        let word = String::from_utf8(buf.clone()).unwrap();
+        println!("{}", word);
+        return;
+    }
 
-aca
-acb
-...
-ac0
- */
+    for &ch in ALPHABET {
+        buf[pos] = ch;
+        generate_recursive(buf, pos + 1, max_len);
+    }
+}
