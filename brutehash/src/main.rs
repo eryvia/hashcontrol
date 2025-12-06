@@ -1,75 +1,75 @@
 use sha2::{Digest, Sha256};
 
-//const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789";
-const ALPHABET: &[u8] = b"abc012";
+const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyz0123456789";
+//const ALPHABET: &[u8] = b"abc012";
 
 struct Values {
     pepper: String,
     max_len: i32,
-    starter_hash: Vec<char>,
     hashes: Vec<String>,
 }
 
 fn get_values() -> Values {
     let pepper: String = "cajovna-2025-".to_string();
-    let max_len: i32 = 3;
-    let starter_hash: Vec<char> = vec!['a', 'b', 'c', 'd', 'e'];
+    let max_len: i32 = 4;
     let hashes: Vec<String> = vec![
-        "936a185caaa266bb9cbe981e9e05cb78cd732b0b3280eb944412bb6f8f8f07af".to_string(),
-        "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8".to_string(),
+        "81620f5ccec6b6ab1364cd17f91a74b2100944487c12b9eb48b1e2307154199a".to_string(),
+        "35f0149cde02f694ca28cd91cd21d899b49d60978999d1afdf63d283c9938b41".to_string(),
     ];
 
     Values {
         pepper,
         max_len,
-        starter_hash,
         hashes,
     }
 }
 
-fn get_hash(value: &str, pepper: &str) -> String {
-    let source: String = pepper.to_string() + value;
-
+fn hash_bytes(buf: &[u8], pepper: &str) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(source.as_bytes());
-    let result = hasher.finalize();
-    format!("{:x}", result)
+    hasher.update(pepper.as_bytes());
+    hasher.update(buf);
+    hex::encode(hasher.finalize())
 }
 
 fn main() {
     let info: Values = get_values();
-    let mut curr_value: String = "".to_string();
+
+    println!("Starting bruteforce up to length {}…", info.max_len);
+
+    let index = &info.max_len;
     let mut control: bool = true;
 
     while control == true {
-        for x in 0..info.max_len {
+        for x in 0..*index + 1 {
             if (x as usize) == 0 {
                 continue;
             }
 
-            print!("Generating for length: {} \n", x);
+            generate_all(x as usize, &info);
 
-            generate_all(x as usize);
+            print!("Finished all lengths up to: {} \n", x);
         }
         control = false;
     }
 }
 
-fn generate_all(max_len: usize) {
+fn generate_all(max_len: usize, info: &Values) {
     let mut buf = vec![ALPHABET[0]; max_len];
-    generate_recursive(&mut buf, 0, max_len);
+    return generate_recursive(&mut buf, 0, max_len, &info);
 }
 
-fn generate_recursive(buf: &mut Vec<u8>, pos: usize, max_len: usize) {
+fn generate_recursive(buf: &mut Vec<u8>, pos: usize, max_len: usize, info: &Values) {
     if pos == max_len {
-        // Convert &[u8] → String
-        let word = String::from_utf8(buf.clone()).unwrap();
-        println!("{}", word);
+        let curr_hash = hash_bytes(buf, &info.pepper);
+        if info.hashes.contains(&curr_hash) {
+            let word = unsafe { String::from_utf8_unchecked(buf.to_vec()) };
+            println!("FOUND: {} -> {}", word, curr_hash);
+        }
         return;
     }
 
     for &ch in ALPHABET {
         buf[pos] = ch;
-        generate_recursive(buf, pos + 1, max_len);
+        generate_recursive(buf, pos + 1, max_len, &info);
     }
 }
