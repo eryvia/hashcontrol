@@ -1,56 +1,95 @@
-import './App.css'
-import { useState } from 'react'
-import { HashSubmitButton } from './comps/hashSubmitButton/hashSubmitButton'
-import { HashInputField } from './comps/hashInputField/hashInputField'
+import { useCallback, useRef, useState } from "react";
+import "./App.css";
 
+function useStreamLog() {
+  const [running, setRunning] = useState(false);
+  const [log, setLog] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
 
-function App() {
-  const [file, setFile] = useState<File | null>(null);
-  console.log(file);
-  
-  const handleUpload = async () => {
-    if (!file) return;
+  // Appends streamed text without losing previous output
+  const append = useCallback((text: string) => {
+    if (!text) return;
+    setLog((prev) => prev + text);
+  }, []);
 
-    const formData = new FormData();
-    formData.append("csv", file);
+  const start = useCallback(async () => {
+    if (running) return;
 
-    const response = await fetch("http://localhost:8000/api/upload-csv", {
-      method: "POST",
-      body: formData,
-    });
+    setRunning(true);
+    setLog("");
 
-    const data = await response.json();
-    console.log("Response:", data);
-};
+    const controller = new AbortController();
+    abortRef.current = controller;
 
-  return (
-    <>
-      <div>
-        <h1>hashcontrol</h1>
-      </div>
+    try {
+      const r = await fetch("/api/run-brutehash-live", {
+        signal: controller.signal,
+        cache: "no-store",
+      });
 
-      <div className="main-container">
-        <HashInputField onFileChange={setFile}/>
-        <HashSubmitButton onClick={handleUpload}/>
-      </div>
-    </>
-  )
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (!r.body) throw new Error("No response body stream");
+
+      const reader = r.body.getReader();
+      const decoder = new TextDecoder();
+
+      // Read the HTTP response as a live byte stream
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        append(decoder.decode(value, { stream: true }));
+      }
+
+      append(decoder.decode());
+    } catch (e: any) {
+      append(
+        e?.name === "AbortError"
+          ? "Client -> stopped\n"
+          : `\n Client -> ${e?.message ?? String(e)}\n` 
+      );
+    } finally {
+      setRunning(false);
+      abortRef.current = null;
+    }
+  }, [append, running]);
+
+  // Cancels the active fetch and kills the backend process
+  const stop = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  const clear = useCallback(() => setLog(""), []);
+
+  return { running, log, start, stop, clear };
 }
 
-export default App
+export default function App() {
+  const { running, log, start, stop, clear } = useStreamLog();
 
+  return (
+    <div className="app">
+      <header className="header">
+        <h2 className="title">Brutehash</h2>
 
-/*
-Frontend -> debian server
-rainbow tables -> ..
-Rust funciton -> threads 
-returns 
+        <div className="controls">
+          <button className="btn" onClick={start} disabled={running}>
+            {running ? "Running..." : "Start"}
+          </button>
 
+          <button className="btn" onClick={stop} disabled={!running}>
+            Stop
+          </button>
 
-input of the hashes ig.
-multiple hashes at once
-do mailu hash => plaintext
+          <button className="btn btnSecondary" onClick={clear} disabled={running || !log}>
+            Clear
+          </button>
+        </div>
+      </header>
 
-
-
-*/
+      <pre className="log">
+        {log || (running ? "starting...\n" : "")}
+      </pre>
+    </div>
+  );
+}
